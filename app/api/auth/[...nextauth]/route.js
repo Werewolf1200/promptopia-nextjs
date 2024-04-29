@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
 import User from "@models/user";
-import { connectDB } from "@utils/database";
+import { connectToDB } from "@utils/database";
 
 const handler = NextAuth({
     providers: [
@@ -17,16 +17,15 @@ const handler = NextAuth({
                 email: session.user.email
             })
 
-            session.user.id = sessionUser._id.toString();
+            session.user.id = sessionUser._id;
 
             return session;
-        },
-    
-
+        },  
+        
         // every next route is a severless route -> lambda funtion ( only opens when its called)
-        async signIn({ profile, user }) {
+        async signIn({ profile }) {
             try {
-                await connectDB();
+                await connectToDB();
 
                 // Check if User already exists
                 const userExists = await User.findOne({
@@ -37,10 +36,11 @@ const handler = NextAuth({
                 if (!userExists) {
                     await User.create({
                         email: profile.email,
-                        username: profile.login.replace(" ", "").toLowerCase(),
-                        image: profile.avatar_url,
+                        username: profile.name,
+                        image: profile.picture,
                     });
                 }
+                
                 return true;
                 
             } catch (error) {
@@ -48,7 +48,7 @@ const handler = NextAuth({
                 return false
             }
         },
-        }
+    }
     }
 )
 
